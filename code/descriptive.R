@@ -37,7 +37,8 @@ china <- left_join(
   mutate(date = mdy(date))
 
 china1 <- china %>% 
-  group_by(date) %>% 
+  mutate(hubei = province == "Hubei") %>% 
+  group_by(hubei, date) %>% 
   summarise(confirmed_cum = sum(confirmed_cum),
             confirmed_daily = sum(confirmed_daily),
             death_cum = sum(death_cum),
@@ -48,7 +49,12 @@ china1 <- china %>%
 
 ggplot() +
   geom_line(data = china1, aes(x = date, y = confirmed_daily)) +
-  geom_line(data = china1, aes(x = date, y = death_daily))
+  geom_line(data = china1, aes(x = date, y = death_daily)) +
+  facet_wrap(~hubei)
+
+ggplot(data = china1, aes(x = date, y = confirmed_daily)) +
+  geom_polygon(alpha = .2) +
+  facet_wrap(~hubei, scales = "free_y")
 
 
 ggplot() +
@@ -57,6 +63,8 @@ ggplot() +
 hubei
 outside hubei
 outside china
+
+GMS!
 
 hubei <- china %>% 
   filter(`Province/State` == "Hubei")
