@@ -2,10 +2,43 @@ library(tidyverse)
 library(tidylog)
 library(lubridate)
 library(here)
-here <- here::here
 
-confirmed <- read_csv(here("csse_covid_19_data", "csse_covid_19_time_series", "time_series_19-covid-Confirmed.csv"))
-death <- read_csv(here("csse_covid_19_data", "csse_covid_19_time_series", "time_series_19-covid-Deaths.csv"))
+confirmed <- read_csv(here::here("csse_covid_19_data", "csse_covid_19_time_series", "time_series_19-covid-Confirmed.csv"))
+death <- read_csv(here::here("csse_covid_19_data", "csse_covid_19_time_series", "time_series_19-covid-Deaths.csv"))
+
+# Global data ----
+
+confirmed_new <- confirmed %>% 
+  select(-c(Lat, Long)) %>% 
+  pivot_longer(-c(`Country/Region`, `Province/State`),
+               names_to = "date",
+               values_to = "confirmed_cum") %>% 
+  rename(country_region = `Country/Region`,
+         province_state = `Province/State`) %>% 
+  group_by(country_region, province_state) %>% 
+  mutate(confirmed_daily = confirmed_cum - lag(confirmed_cum),
+         confirmed_daily = replace_na(confirmed_daily, 0))
+
+death_new <- death %>% 
+  select(-c(Lat, Long)) %>% 
+  pivot_longer(-c(`Country/Region`, `Province/State`),
+               names_to = "date",
+               values_to = "death_cum") %>% 
+  rename(country_region = `Country/Region`,
+         province_state = `Province/State`) %>% 
+  group_by(country_region, province_state) %>% 
+  mutate(death_daily = death_cum - lag(death_cum),
+         death_daily = replace_na(death_daily, 0))
+
+covid19 <- left_join(
+  confirmed_new,
+  death_new,
+  by = c("date", "province_state", "country_region")
+) %>% 
+  mutate(date = mdy(date))
+
+write_csv(covid19, here::here("code", "covid19.csv"))
+
 
 # China data ----
 
